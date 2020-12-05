@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <omp.h>
 #include <math.h>
-#define thrdsCount 6
+#include <iostream>
+#include <fstream>
+#include <iomanip>
 
 double function(double x) {
     double sine = sin(1 / (x * x));
@@ -26,7 +28,7 @@ double integral_sequential(double a, double b, long n_points) {
     return internal_sum * increment;
 }
 
-double integral_critical(double a, double b, long n_points) {
+double integral_critical(double a, double b, long n_points, int thrdsCount) {
     double x, internal_sum = 0.0;
     double increment = (b - a) / (double) n_points;
     int i;
@@ -42,7 +44,7 @@ double integral_critical(double a, double b, long n_points) {
     return internal_sum * increment;
 }
 
-double integral_atomic(double a, double b, long n_points) {
+double integral_atomic(double a, double b, long n_points, int thrdsCount) {
     double x, internal_sum = 0.0;
     double increment = (b - a) / (double) n_points;
     int i;
@@ -56,7 +58,7 @@ double integral_atomic(double a, double b, long n_points) {
     return internal_sum * increment;
 }
 
-double integral_lock(double a, double b, long n_points) {
+double integral_lock(double a, double b, long n_points, int thrdsCount) {
     double x, internal_sum = 0.0;
     double increment = (b - a) / (double) n_points;
     int i;
@@ -74,7 +76,7 @@ double integral_lock(double a, double b, long n_points) {
     return internal_sum * increment;
 }
 
-double integral_reduction(double a, double b, long n_points) {
+double integral_reduction(double a, double b, long n_points, int thrdsCount) {
     double x, internal_sum = 0.0;
     double increment = (b - a) / (double) n_points;
     int i;
@@ -87,46 +89,79 @@ double integral_reduction(double a, double b, long n_points) {
     return internal_sum * increment;
 }
 
+void measure_time(char fname) {
+    double t1, t2, dt_sum = 0.0, integral;
+    double a[] = {0.00001, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0, 100.0};
+    double b[] = {0.0001, 0.001, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0};
+    long n_points[] = {100000, 1000000, 10000000};
+    int n_threads[] = {1, 2, 3, 4, 5, 6};
+
+    for (const auto& n_point : n_points) {
+        for (const auto& n_thread : n_threads) {
+            for (int i = 0; i < 8; i++) {
+                dt_sum = 0.0;
+                for (int n_rep = 0; n_rep < 5; n_rep++) {
+                    if (fname == 's') {
+                        t1 = omp_get_wtime();
+                        integral = integral_sequential(a[i], b[i], n_point);
+                        t2 = omp_get_wtime();
+                    }
+                    else if (fname == 'c') {
+                        t1 = omp_get_wtime();
+                        integral = integral_critical(a[i], b[i], n_point, n_thread);
+                        t2 = omp_get_wtime();
+                    }
+                    else if (fname == 'a') {
+                        t1 = omp_get_wtime();
+                        integral = integral_atomic(a[i], b[i], n_point, n_thread);
+                        t2 = omp_get_wtime();
+                    }
+                    else if (fname == 'l') {
+                        t1 = omp_get_wtime();
+                        integral = integral_lock(a[i], b[i], n_point, n_thread);
+                        t2 = omp_get_wtime();
+                    }
+                    else if (fname == 'r') {
+                        t1 = omp_get_wtime();
+                        integral = integral_reduction(a[i], b[i], n_point, n_thread);
+                        t2 = omp_get_wtime();
+                    }
+                    dt_sum += t2 - t1;
+                }
+                dt_sum /= 5;
+                std::ofstream outfile;
+                outfile.open("task1.csv", outfile.app);
+                outfile << fname;
+                outfile << ",";
+                outfile << n_point;
+                outfile << ",";
+                outfile << n_thread;
+                outfile << ",";
+                outfile << std::fixed << std::setprecision(8) << a[i];
+                outfile << ",";
+                outfile << std::fixed << std::setprecision(8) << b[i];
+                outfile << ",";
+                outfile << std::fixed << std::setprecision(8) << dt_sum;
+                outfile << "\n";
+                outfile.close();
+                printf("%c, n_points %ld, n_threads %d, a %lf, b %lf, time %lf\n", fname, n_point, n_thread, a[i], b[i], dt_sum);
+            }
+        }
+    }
+}
+
 int main() {
-    double t1, t2, dt, dt_sum = 0.0;
-    double a, b, integral = 0.0;
-    int n_points = 10000000;
 
-    t1 = omp_get_wtime();
-    integral = integral_true(0.00001, 0.0001);
-    t2 = omp_get_wtime();
-    dt = t2 - t1;
-    printf("True: time %f, value %f\n", dt, integral);
+    std::ofstream outfile;
+    outfile.open("task1.csv");
+    outfile << "implementation,N_points,N_threads,A,B,time\n";
+    outfile.close();
 
-    t1 = omp_get_wtime();
-    integral = integral_sequential(0.00001, 0.0001, n_points);
-    t2 = omp_get_wtime();
-    dt = t2 - t1;
-    printf("Sequential: time %f, value %f\n", dt, integral);
-
-    t1 = omp_get_wtime();
-    integral = integral_critical(0.00001, 0.0001, n_points);
-    t2 = omp_get_wtime();
-    dt = t2 - t1;
-    printf("Critical: time %f, value %f\n", dt, integral);
-
-    t1 = omp_get_wtime();
-    integral = integral_atomic(0.00001, 0.0001, n_points);
-    t2 = omp_get_wtime();
-    dt = t2 - t1;
-    printf("Atomic: time %f, value %f\n", dt, integral);
-
-    t1 = omp_get_wtime();
-    integral = integral_lock(0.00001, 0.0001, n_points);
-    t2 = omp_get_wtime();
-    dt = t2 - t1;
-    printf("Lock: time %f, value %f\n", dt, integral);
-
-    t1 = omp_get_wtime();
-    integral = integral_reduction(0.00001, 0.0001, n_points);
-    t2 = omp_get_wtime();
-    dt = t2 - t1;
-    printf("Reduction: time %f, value %f\n", dt, integral);
+    measure_time('s');
+    measure_time('a');
+    measure_time('c');
+    measure_time('l');
+    measure_time('r');
 
     return 0;
 }
