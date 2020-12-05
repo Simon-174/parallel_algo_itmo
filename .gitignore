@@ -2,3 +2,4 @@
 docs/
 *.bin
 *.~lock*
+*.ipynb_checkpoints/

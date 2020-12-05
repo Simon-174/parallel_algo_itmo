@@ -94,7 +94,7 @@ void measure_time(char fname) {
     double a[] = {0.00001, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0, 100.0};
     double b[] = {0.0001, 0.001, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0};
     long n_points[] = {100000, 1000000, 10000000};
-    int n_threads[] = {1, 2, 3, 4, 5, 6};
+    int n_threads[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20};
 
     for (const auto& n_point : n_points) {
         for (const auto& n_thread : n_threads) {
