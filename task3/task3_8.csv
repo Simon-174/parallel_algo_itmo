@@ -1,0 +1,13 @@
+sim_method,dims,nthreads,time
+similarity_shared,256,8,0.7879325800004153
+similarity_shared,512,8,0.0056776789997456945
+similarity_shared,1024,8,0.018539483000495238
+similarity_shared,2048,8,0.06343697599913867
+similarity_global,256,8,0.16252731799977482
+similarity_global,512,8,0.008740477000173996
+similarity_global,1024,8,0.04272772700005589
+similarity_global,2048,8,0.31696489799924166
+similarity_sequential,256,8,0.6049578640004256
+similarity_sequential,512,8,2.8194787250004083
+similarity_sequential,1024,8,11.909981972000423
+similarity_sequential,2048,8,55.74596765200022
